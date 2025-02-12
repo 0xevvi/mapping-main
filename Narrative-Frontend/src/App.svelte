@@ -22,11 +22,11 @@
   <div id="left-bar">
     <div id="meta-info" class="p-4 bg-orange-100 rounded-xl">
       <h1 class="font-bold font-700 text-3xl">
-        Explorer for Ethno-Political activity globally on Tamils
+        Tamil watch-dog project
       </h1>
       <h3>
         <br />
-        This is a prototype to explore linked stories of Tamil activity
+        This is a prototype to explore linked stories of Tamil activity across the globe.
         <br /> <br /> Search for events or click on an
         event and do a proximity search.
       </h3>
