@@ -1,0 +1,238 @@
+---
+title: Proposal for map based interface development for Hindutva Watch. A geo-politics visualisation of Hindutva events
+subtitle: This is an inprogress proposal being developed. All hypothesis are expected to be researched and developed into outcomes if the project goes forward 
+author: Adhavan
+date: 2023-02-25
+execute: 
+  echo: false
+  warning: false
+  error: false
+
+format:
+    html:
+        page-layout: full
+        css: docs/styles.css
+        embed-resources: true
+---
+
+::: { .grid .text-container}
+
+::: {.g-col-lg-4 .g-col-md-4  .g-col-sm-12 .g-col-12 .px-md-3 .mx-sm-auto}
+
+## How does a visualisation help?
+
+### Hindutva Watch's database can be spatially related and mapped
+- Maps are great interfaces for when most titles in HW are geo-located
+    - Titles or content can be 'geocoded' 
+- I believe there is significant benefits to displaying this data visually on a map, more hypothesis and questions can be asked, answered or pondered on the internet through the platform HW provides.
+- Map based interfaces provide a level of interaction that is simply much more interesting to the reader or researcher
+
+### A web map explorer for producing stories
+- This explorer could allow for users to filter, highlight and read on maps. 
+- Journalists and researchers can use this tool to develop insightful narratives
+- As an outcome, all essays can be catalogued with tags and relationships (What caused this event? What preceeded this event? What was the first ever protest?) can be developed and then visualised.
+
+## Prototype
+
+This map has been built from the existing Hindutva Watch database. The database has been cleaned and the coordinates have been extracted based on place names in titles.
+
+- Going forward, more granular location data can be extracted, based on Village names, and implied locations
+- The map is interactive and allows for filtering and highlighting of events. 
+- The map can be used to develop stories and narratives when an interface for this is developed
+
+### Issues with finding accurate coordinates
+- Some articles are marked in the wrong cities, continents and states
+- This will have to be worked on in the future
+- The map is a prototype and is not a final product
+:::
+
+::: { .g-col-lg-8 .g-col-md-8 .g-col-sm-12 .g-col-12 .sticky-chunk .px-md-3 .px-sm-1 #map }
+
+## Map of HW events
+
+```{python}
+#| output: asis
+#| fig-height: auto
+import folium
+from folium.plugins import MarkerCluster, Search
+import pandas as pd
+from datetime import datetime
+import geopandas as gpd
+import pandas_geojson as pandas_geojson
+
+df = pd.read_csv('data/HWdb1_geocoded.csv')
+
+# split coords into x and y
+df[['y', 'x']] = df['coords'].str.split(',', expand=True).astype(float)
+
+# remove rows with no coords
+df_geo = df.dropna(subset=['x', 'y'])
+
+# convert to geojson
+geojson = pandas_geojson.to_geojson(df_geo, lat='x', lon='y', properties=['title.rendered', 'date', 'excerpt.rendered', 'link'])
+
+pandas_geojson.write_geojson(geojson, filename='data/random.geojson', indent=4)
+
+
+```
+
+```{python}
+
+
+# create map
+map = folium.Map(location=[21.325001, 78.750000],
+                        zoom_start=3,
+                        tiles='CartoDB dark_matter',
+                        prefer_canvas=True,
+                        height=1000,
+                        attr="Hindutva Watch")
+
+# add marker cluster
+marker_cluster = MarkerCluster(
+    options={
+        "maxClusterRadius": 35 # default is 80
+    },
+    ).add_to(map)
+
+# add markers
+for point in range(0, len(df_geo)):
+
+    # Fields form the WordPress DB
+    date = df_geo.iloc[point]['date']
+    title = df_geo.iloc[point]['title.rendered']
+    excerpt = df_geo.iloc[point]['excerpt.rendered']
+    link = df_geo.iloc[point]['link']
+
+    popupHTML = '<small>' + date + '</small>' + '<h3>' + title + '</h3>' + '<p>' + str(excerpt) + '</p>' 
+    
+    folium.CircleMarker([df_geo.iloc[point]['x'], df_geo.iloc[point]['y']],
+                        radius=5,
+                        color='red',
+                        fill=True,
+                        fill_color='red',
+                        fill_opacity=0.6,
+                        popup = folium.Popup(popupHTML, max_width=500, max_height=500),
+                        name = df_geo.iloc[point]['title.rendered'],
+                        ).add_to(marker_cluster)
+# folium.LayerControl().add_to(map)
+
+servicesearch = Search(
+        layer=marker_cluster,
+        search_label="name",
+        placeholder='Search for an event',
+        position='topright',
+        collapsed=False,
+    ).add_to(map)
+
+```
+:::
+:::
+
+::: { .grid .text-container}
+::: {.g-col-lg-4 .g-col-md-4  .g-col-sm-12 .g-col-12 .px-md-3 .mx-sm-auto}
+
+
+### Map based *event search* interfaces
+- [Sabrang India, "Kranti ka Naqsha, Mapping the Revolution"](https://sabrangindia.in/article/kranti-ka-naqsha-mapping-revolution)
+- [Syria Humanitarian Tracker](https://syriatracker.crowdmap.com/)
+
+### "Intolerance" / Political unrest / Moods of Political Discourse maps
+- [The Conversation, "What we have found by mapping incidents of intolerance across South Asia"](https://theconversation.com/what-weve-found-by-mapping-incidents-of-intolerance-across-south-asia-66181)
+- [The Armed Conflict Location & Event Data Project (ACLED), "Demonstrations in India", upto 2018](https://acleddata.com/2018/04/20/demonstrations-in-india/)
+- [The Atlantic, "The Geography of Partisan Prejudice"](https://www.theatlantic.com/politics/archive/2019/03/us-counties-vary-their-degree-partisan-prejudice/583072/)
+- [The GDELT Project](https://www.gdeltproject.org/)
+
+
+:::
+
+::: { .g-col-lg-8 .g-col-md-8 .g-col-sm-12 .g-col-12 .sticky-chunk .px-md-3 .px-sm-1 #map2 }
+
+## State wise distribution of events
+
+
+```{python }
+#| title: Read files
+
+states = gpd.GeoDataFrame.from_file('data/india_states.geojson', crs={'init': 'epsg:3857'}).to_crs(epsg="4326")
+
+# print(states.crs)
+
+# Create a unique ID for each state
+states['PolyID'] = states.index
+
+# create a GeoDataFrame from the HWdb
+HWevents = gpd.GeoDataFrame(df_geo, geometry=gpd.points_from_xy(df_geo.x, df_geo.y), crs={'init': 'epsg:4326'})
+
+# add a constant column for aggregation
+HWevents['const'] = 1
+
+# check
+# states.head(4)
+# HWevents.head(4)
+```
+
+```{python}
+# Spatial join 
+# https://geopandas.org/mergingdata.html
+# Finds the states that each event is in
+HWeventsInStates = gpd.sjoin(HWevents, states, how="inner", op='intersects')
+# HWeventsInStates.head(10)
+```
+
+```{python}
+
+# Sum the number of events in each state by pivoting the table
+HWeventsInStates = pd.pivot_table(HWeventsInStates, columns='const', index=['PolyID'], aggfunc={'const': sum})
+HWeventsInStates.columns = HWeventsInStates.columns.droplevel()
+HWeventsInStates = HWeventsInStates.rename(columns={1: 'count'})
+
+# HWeventsInStates.head(10)
+
+# Merge State data with the aggregated event data
+HWeventsInStates_ = states.merge(HWeventsInStates, on='PolyID', how='left')
+
+# Make into json for folium
+geo = gpd.GeoSeries(HWeventsInStates_.set_index('PolyID')['geometry']).to_json()
+```
+
+```{python}
+mapStates = folium.Map(location=[21.325001, 78.750000],
+                        zoom_start=2,
+                        prefer_canvas=True,
+                        attr="Hindutva Watch",
+                        height=1000)
+
+folium.Choropleth(
+    geo_data = geo,
+    name = 'choropleth',
+    data = HWeventsInStates_,
+    columns = ['PolyID', 'count'], # 'PolyID' is the unique ID for each state (key), 'count' is the number of events in each state (value)
+    key_on = 'feature.id',
+    fill_color = 'YlOrRd',
+    fill_opacity = 0.5,
+    line_opacity = 1,
+    legend_name = 'Hindutva Events according to Hindutva Watch',
+    smooth_factor=  1,
+    simplify_factor= 1
+).add_to(mapStates)
+
+# Create a layer control object
+layer_control = folium.map.LayerControl().add_to(mapStates)
+```
+
+```{python}
+from folium.plugins import Draw
+Draw(
+    export=True,
+    filename="my_data.geojson",
+    position="topleft",
+    draw_options={"polyline": {"allowIntersection": False}},
+    edit_options={"poly": {"allowIntersection": False}},
+).add_to(map)
+
+map
+```
+
+:::
+:::
+

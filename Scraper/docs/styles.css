@@ -1,0 +1,52 @@
+.sticky-chunk .cell-output-display {
+  overflow-x: unset !important;
+}
+
+.sticky-chunk {
+  position: -webkit-sticky; /* Safari */
+  position: sticky !important;
+  top: 0;
+
+  width: 100%;
+}
+
+#toc {
+  position: relative;
+  height: 10vh;
+  margin-bottom: 3em;
+  padding: 2em 0em;
+  top: 10 !important;
+  z-index: 1000;
+}
+#map,
+#map2 {
+  height: 100vh;
+}
+#title-block-header {
+  padding: 5em 1em 0 1em;
+}
+
+#toc > ul {
+  padding-left: 1rem;
+  background-color: #f1f1f1;
+  border-radius: 10pt;
+}
+#toc li {
+  display: inline-block;
+}
+
+#toc li:after {
+  content: " | ";
+}
+
+.toc li a:active {
+  color: #73bd67;
+}
+
+.figure-caption {
+  text-align: center;
+}
+
+.leaflet-control-layers legend .tick {
+  color: white !important;
+}
